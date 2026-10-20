@@ -1237,6 +1237,7 @@ search_queries:
 #                   whichever host the tenant's own board URL uses is preserved, not normalized)
 #   adp-workforcenow  workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=...&ccId=...
 #   zoho-recruit    <tenant>.zohorecruit.com  (any path; the board is always read from /jobs/Careers)
+#   workwithindies  www.workwithindies.com  (indie game studio job board, board-wide; any path on the host)
 #
 # When the public careers URL is a branded custom domain (e.g.
 # careers.adyen.com), set `provider: smartrecruiters` explicitly to
@@ -1626,6 +1627,12 @@ search_queries:
 #
 # - name: Generalist World                # curated generalist / operator roles (SSR HTML, one fetch)
 #   provider: generalist-world            # or careers_url: https://generalist.world/jobs/ (auto-detected)
+#   enabled: true
+#
+# - name: Work With Indies                # indie game studios (SSR HTML, usually one fetch)
+#   provider: workwithindies              # or careers_url: https://www.workwithindies.com (auto-detected)
+#   max_pages: 10         # optional page cap (100 postings/page, default 10, max 30)
+#   # Remote postings carry location "Remote" or "Remote · {region/timezone}".
 #   enabled: true
 #
 # - name: Built In                        # US tech aggregator, many employers
