@@ -886,12 +886,17 @@ async function checkPortalSlugs(root) {
   try {
     const { verifyPortalsFile } = await import('./verify-portals.mjs');
     const { loadProviders } = await import('./providers/_registry.mjs');
+    const { mergeProviderPlugins } = await import('./plugins/_engine.mjs');
     const { makeHttpCtx } = await import('./providers/_http.mjs');
     // Load the same provider plugins the scanner uses so tier 2 runs: without
     // them every non-ATS entry (all job_boards, plus any Workday/Avature/…
     // tracked_companies) resolves to an un-actionable "skipped" and a broken
     // one would never reach "missing" — a false pass.
     const providers = await loadProviders(join(__dirname, 'providers'));
+    // verify-portals.mjs's own CLI folds in enabled provider plugins (#4026);
+    // this caller builds the map itself, so it must too, or a plugin-provider
+    // entry is probed as unclaimed. No-op when config/plugins.yml is absent.
+    await mergeProviderPlugins(providers, { root: __dirname, dataRoot: root });
     const { results } = await verifyPortalsFile(portalsPath, {
       providers,
       httpCtx: makeHttpCtx(),

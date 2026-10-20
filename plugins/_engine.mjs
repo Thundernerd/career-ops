@@ -752,6 +752,9 @@ export function filterResultsForId(results, id) {
 function inactiveProviderStub(id, reason) {
   return {
     id,
+    // Read by tools that diagnose without fetching (coverage-check.mjs), so
+    // they can say why the board is never scanned instead of calling it live.
+    inactiveReason: reason,
     detect: () => null,
     fetch: async () => { throw new Error(`plugin "${id}" inactive: ${reason}. Run \`node doctor.mjs\` for setup.`); },
   };
