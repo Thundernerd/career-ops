@@ -1237,6 +1237,7 @@ search_queries:
 #                   whichever host the tenant's own board URL uses is preserved, not normalized)
 #   adp-workforcenow  workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=...&ccId=...
 #   zoho-recruit    <tenant>.zohorecruit.com  (any path; the board is always read from /jobs/Careers)
+#   werkenbijdeoverheid  www.werkenbijdeoverheid.nl  (Dutch government vacancy portal, board-wide; any path on the host)
 #
 # When the public careers URL is a branded custom domain (e.g.
 # careers.adyen.com), set `provider: smartrecruiters` explicitly to
@@ -1751,6 +1752,16 @@ search_queries:
 #   # measured 2026-10-12) cannot be walked past 2,100 rows — each keyword gets
 #   # its own window. No location option either — use location_filter (above)
 #   # for precision, same recall-first approach VDAB/Job Bank Canada use.
+#   enabled: true
+#
+# - name: Werken bij de Overheid         # Dutch government vacancy portal (NL)
+#   provider: werkenbijdeoverheid        # or careers_url: https://www.werkenbijdeoverheid.nl/vacatures (auto-detected)
+#   # searchKeywords: data               # optional — the portal's own term= search; skips the sitemap pass
+#   max_pages: 100        # optional page cap (20 vacancies/page, default 100, max 200)
+#   # Unfiltered, the walk is reconciled against sitemap-vacatures.xml: the
+#   # listing's tie order shifts between requests, so ~5–10% of postings are
+#   # only reachable through their detail page (measured 2026-10-20). Location
+#   # is the Dutch place name ("Den Haag"), so add those to location_filter.
 #   enabled: true
 #
 # - name: Glints — Indonesia             # SE-Asia aggregator (SG/ID/MY/VN)
