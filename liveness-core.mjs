@@ -83,6 +83,15 @@ const HARD_EXPIRED_PATTERNS = [
   /ce poste n'est plus (disponible|a pourvoir|ouvert)/i,
   /recrutement (termine|cloture)/i,
   /candidatures (closes|cloturees)/i,
+  // Polish (pracuj.pl and boards on the same layout keep an archived offer
+  // online, "Aplikuj" button included, and say it is closed only in a banner).
+  // Spelled in the normalized alphabet: normalizeForMatch() folds ą/ń/ż but
+  // not ł, which NFD does not decompose, hence the [łl] classes.
+  /og[łl]oszenie wygas[łl]o/i,
+  /pracodawca zakonczy[łl] zbieranie zg[łl]oszen/i,
+  /oferta (jest )?nieaktualna/i,
+  /oferta archiwalna/i,
+  /kandydaci nie sa juz akceptowani/i,
 ];
 
 const LISTING_PAGE_PATTERNS = [

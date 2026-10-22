@@ -38,6 +38,7 @@ Process multiple job offers in parallel via headless workers. Each worker runs t
 | `--limit N` | `0` | Max number of offers to process in this run (0 = no limit) |
 | `--max-retries N` | `2` | Max retry attempts per offer before giving up |
 | `--worker-timeout N` | `1800` | Stop a worker that runs longer than N seconds and mark the offer failed (0 = no limit) |
+| `--thin-action MODE` | `webfetch` | What to do when no usable JD text could be fetched (JS-rendered page, empty shell). `webfetch`: the worker tries WebFetch. `skip`: record the offer as skipped (`needs-playwright`), spawn no worker. `browser-extract`: render the page with `browser-extract.mjs` (headless Chromium, no model tokens) and give the text to the worker. Retryable outcomes are recorded as `failed` and picked up again by `--retry-failed` (each spends one of `--max-retries`): no HTTP response from the fetch (DNS, refused, timeout, TLS), and for `browser-extract` a missing Playwright, `empty_text` or `navigation_error`. Anything else is terminal `skipped` |
 | `--rate-limit-sleep N` | `300` | Maximum adaptive retry delay in seconds (0–2147483647); use `0` to pause the batch immediately |
 
 ### Adaptive rate-limit retries (Claude only)

@@ -25,7 +25,7 @@ import { hasYamlContent, loadYaml } from './lib/yaml-document.mjs';
 import {
   discoverPlugins, pluginRoots, loadPluginConfig, pluginStatus,
   runHook, filterResultsForId, loadDotenvOnce, HOOK_KINDS, loadSkill, resolveSuccessorIds,
-  warnConfigLeftInCodeRoot,
+  warnConfigLeftInCodeRoot, ID_RE,
 } from './plugins/_engine.mjs';
 import { loadRegistry, findInRegistry, classifySource, sourceBadge, successorFor } from './plugins/_registry.mjs';
 import { readLock, writeLockEntry, removeLockEntry, hashPluginTree, consentSurface } from './plugins/_lock.mjs';
@@ -457,6 +457,11 @@ function cmdTrust(args) {
 function cmdRemove(args) {
   const id = args[0];
   if (!id) { console.error('Usage: node plugins.mjs remove <id>'); process.exit(1); }
+  // Ids reach path.join(ROOT, 'plugins.local', id) → rmSync recursive below;
+  // path.join normalizes `..`, so an unvalidated id escapes plugins.local
+  // (remove .. would take the checkout root with it). Same shape the engine
+  // already enforces for manifest ids (_engine.mjs ID_RE).
+  if (!ID_RE.test(id)) { console.error(`✗ Invalid plugin id ${JSON.stringify(id)} (need ^[a-z0-9][a-z0-9-]*$)`); process.exit(1); }
   const dir = path.join(ROOT, 'plugins.local', id);
   if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
   removeLockEntry(ROOT, id);

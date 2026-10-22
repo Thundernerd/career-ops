@@ -183,6 +183,40 @@ closedVdab.result === 'expired' && closedVdab.code === 'expired_body'
   ? pass('VDAB "Deze vacature is niet meer gepubliceerd" -> expired, despite its "Solliciteer nu"')
   : fail(`closed VDAB vacancy classified ${closedVdab.result}/${closedVdab.code}, expected expired/expired_body`);
 
+console.log('\nliveness-core — Polish closure banners (pracuj.pl) beat the "Aplikuj" control');
+
+// pracuj.pl keeps an archived offer's full page, "Aplikuj" button included,
+// and marks it closed only in a banner. Before these patterns the visible
+// apply control won and every archived offer read as active.
+const pracujUrl = 'https://www.pracuj.pl/praca/dyrektor-operacyjny-warszawa,oferta,1004567890';
+const polishBody = 'Twój zakres obowiązków\nZarządzanie operacjami w regionie, odpowiedzialność za budżet i zespół.\n'.repeat(4);
+const pracuj = (banner) => classifyLiveness({
+  status: 200,
+  requestedUrl: pracujUrl,
+  finalUrl: pracujUrl,
+  bodyText: `${banner}Dyrektor operacyjny\nWarszawa\n${polishBody}`,
+  applyControls: ['Aplikuj'],
+});
+for (const banner of [
+  'Ogłoszenie wygasło',
+  'OGLOSZENIE WYGASLO',
+  'Pracodawca zakończył zbieranie zgłoszeń na tę ofertę',
+  'Oferta jest nieaktualna',
+  'Oferta archiwalna',
+  'Kandydaci nie są już akceptowani',
+]) {
+  const r = pracuj(`${banner}\n`);
+  r.result === 'expired' && r.code === 'expired_body'
+    ? pass(`pracuj.pl "${banner}" -> expired, despite its "Aplikuj"`)
+    : fail(`pracuj.pl "${banner}" classified ${r.result}/${r.code}, expected expired/expired_body`);
+}
+
+// The same page without a banner is a live offer and must stay active.
+const livePracuj = pracuj('');
+livePracuj.result === 'active'
+  ? pass('pracuj.pl offer without a closure banner stays active')
+  : fail(`live pracuj.pl offer classified ${livePracuj.result}/${livePracuj.code}, expected active`);
+
 console.log('\nliveness-core — the getManfred Apply control, and the date a closed posting shows');
 
 // getManfred labels Apply "¡Apúntame!" ("sign me up"); the walk reads the
