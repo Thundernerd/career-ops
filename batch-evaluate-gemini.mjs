@@ -35,6 +35,7 @@ try {
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { isMainModule } from './lib/is-main-module.mjs';
+import { withJdArchiveSection } from './lib/jd-archive-section.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const DATA_ROOT = getCareerOpsRoot();
@@ -340,7 +341,7 @@ export async function processOffer(browser, line, idx, _evaluate = evaluateWithR
 **PDF:** pending
 **Tool:** Gemini (${modelName})\n
 ---\n
-${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').trim()}\n`;
+${withJdArchiveSection(evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').trim(), jdText).trimEnd()}\n`;
 
     writeFileSync(reportPath, reportContent, 'utf-8');
 

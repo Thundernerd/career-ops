@@ -160,8 +160,9 @@ const CLOSURE = {
     'lib/status-hooks.mjs', 'session-activity.mjs',
     // check-jd-archive.mjs / jd-capture.mjs: the transition into Interview
     // triggers a JD-archive check via these two (#4523), which in turn need
-    // their own two lib/ helpers.
+    // their own lib/ helpers.
     'check-jd-archive.mjs', 'jd-capture.mjs', 'lib/cli-flags.mjs', 'lib/is-main-module.mjs',
+    'lib/jd-archive-section.mjs',
     // Runtime assets, not imports: an import scan does not see these and each
     // one only announces itself by crashing the child.
     'tracker-aliases.json',

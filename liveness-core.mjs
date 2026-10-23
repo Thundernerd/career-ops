@@ -169,6 +169,9 @@ const APPLY_PATTERNS = [
   // most getManfred postings, closed ones too, have an FAQ button such as
   // "¿Puedo aplicar si vivo fuera de España?".
   /\bapuntame\b/i,
+  // Spanish (HiringRoom): "Postularse". The label, not the verb: every HiringRoom
+  // posting also links a help article, "¿Cómo me postulo?" ("how do I apply?").
+  /\bpostularse\b/i,
   // Chinese MokaHR and Feishu Jobs detail pages use these exact control texts.
   // Keep them narrow: bare “申请” appears in descriptive prose, while longer
   // labels containing “投递” can be status/history controls rather than Apply.

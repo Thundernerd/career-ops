@@ -8,7 +8,7 @@
  * modes (apply Step 9, followup, batch) call this instead of editing the table.
  *
  * Usage:
- *   node set-status.mjs <report#|company> <state> [--note "..."] [--role "..."] [--force] [--dry-run] [--json]
+ *   node set-status.mjs <tracker#|company> <state> [--note "..."] [--role "..."] [--force] [--dry-run] [--json]
  *
  * Row resolution:
  *   - --row N     → exact match on the # column, stated explicitly
@@ -138,12 +138,12 @@ const STATES_FILE = join(CODE_ROOT, 'templates/states.yml');
 // acquireTrackerLockForCli() itself (tracker-utils.mjs), via CLI_EXIT.LOCK_TIMEOUT.
 const { OK: EXIT_OK, USAGE: EXIT_USAGE, NOT_FOUND: EXIT_NOT_FOUND, AMBIGUOUS: EXIT_AMBIGUOUS } = CLI_EXIT;
 
-const USAGE = `Usage: node set-status.mjs <report#|company> <state> [--note "..."] [--role "..."] [--on YYYY-MM-DD] [--force] [--dry-run] [--json]
+const USAGE = `Usage: node set-status.mjs <tracker#|company> <state> [--note "..."] [--role "..."] [--on YYYY-MM-DD] [--force] [--dry-run] [--json]
        node set-status.mjs --row N <state> [...]        (explicit tracker row ID)
        node set-status.mjs --report N <state> [...]     (explicit report ID)
        node set-status.mjs --report-link N <state> [...] (strict Report-cell identity)
 
-  <report#|company>  Row selector: tracker # (exact) or company name (normalized match)
+  <tracker#|company> Row selector: tracker # (exact) or company name (normalized match)
   <state>            Canonical state from templates/states.yml (aliases accepted)
   --row N            Select by tracker # explicitly (unambiguous; skips the mismatch guard)
   --report N         Select the row whose Report cell links report #N
@@ -265,7 +265,7 @@ const WRITER_SOURCES = new Set(['set-status', 'web', 'reply-watch']);
 const failUsage = makeCliFailUsage({
   argv: rawArgs,
   usage: USAGE,
-  defaultMessage: 'Expected 2 arguments: <report#|company> <state>',
+  defaultMessage: 'Expected 2 arguments: <tracker#|company> <state>',
 });
 
 for (let i = 0; i < rawArgs.length; i++) {

@@ -9,6 +9,7 @@
   "files": [
     "bin/cli.mjs",
     "bin/npm-command.mjs",
+    "bin/release-tag.mjs",
     "bin/skill-entrypoints.mjs",
     "README.md"
   ],

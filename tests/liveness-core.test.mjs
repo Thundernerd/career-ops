@@ -281,6 +281,40 @@ closedEnglish.result === 'expired' && closedEnglish.code === 'expired_body'
   ? pass('a closed getManfred posting in English -> expired, despite its "Can I apply...?" FAQ button')
   : fail(`closed getManfred posting in English classified ${closedEnglish.result}/${closedEnglish.code}, expected expired/expired_body`);
 
+console.log('\nliveness-core — the HiringRoom Apply control');
+
+// HiringRoom labels Apply "Postularse", and the walk reads it twice: the button
+// under the title and the one after the description. With no pattern for it, a
+// live posting read no_apply_control and scan --verify dropped it (#4832). The
+// controls below are what the walk returns on a live posting.
+const hiringRoomUrl = 'https://growuphr.hiringroom.com/jobs/get_vacancy/6a2314c34cf88a4172be80c2';
+const hiringRoomBody = 'Descripción del puesto\nNos encontramos en la búsqueda de un Service Desk Manager para liderar una operación global de soporte.\n'.repeat(4);
+const hiringRoomChrome = ['Portal de empleos', 'Compartir', '¿Cómo me postulo?', 'Actualizá tu perfil', 'Contacto con soporte', 'Cancelar', 'Enviar'];
+const hiringRoomApply = classifyLiveness({
+  status: 200,
+  requestedUrl: hiringRoomUrl,
+  finalUrl: hiringRoomUrl,
+  bodyText: hiringRoomBody,
+  applyControls: ['Postularse', 'Postularse', ...hiringRoomChrome],
+});
+hiringRoomApply.result === 'active' && hiringRoomApply.code === 'apply_control_visible'
+  ? pass('"Postularse" marks a HiringRoom posting active')
+  : fail(`"Postularse" classified ${hiringRoomApply.result}/${hiringRoomApply.code}, expected active/apply_control_visible`);
+
+// Every HiringRoom posting also links the help article "¿Cómo me postulo?"
+// ("how do I apply?"). The pattern reads the label, not the verb, so the help
+// link alone is not an Apply control.
+const hiringRoomHelp = classifyLiveness({
+  status: 200,
+  requestedUrl: hiringRoomUrl,
+  finalUrl: hiringRoomUrl,
+  bodyText: hiringRoomBody,
+  applyControls: hiringRoomChrome,
+});
+hiringRoomHelp.result === 'uncertain' && hiringRoomHelp.code === 'no_apply_control'
+  ? pass('the "¿Cómo me postulo?" help link is not an Apply control')
+  : fail(`the help link alone classified ${hiringRoomHelp.result}/${hiringRoomHelp.code}, expected uncertain/no_apply_control`);
+
 console.log('\nliveness-core — role/position "is closed" and bare "Job Expired" banners classify as expired');
 
 // Reported on agentic-engineering-jobs.com (111 of 111 uncertain postings

@@ -124,3 +124,5 @@ jobs:
         run: node upgrade-tests.mjs --local-paths
       - name: User-layer manifest entry is refused, not fatal (#3782)
         run: node upgrade-tests.mjs --user-layer-refusal
+      - name: Failed npm install is reported, rollback reinstalls
+        run: node upgrade-tests.mjs --failed-install

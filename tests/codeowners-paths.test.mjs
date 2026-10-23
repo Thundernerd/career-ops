@@ -64,13 +64,20 @@ ok('the plugin registry directory is owned, not the deleted single file', () => 
 // The router is whatever the CLI skill entrypoints actually link to, read from
 // the links themselves so a moved router fails here rather than going unowned.
 // A checkout without symlink support (Windows, core.symlinks=false) holds each
-// link as a one-line file naming its target, so read that form too.
+// link as a one-line file naming its target, so read that form too. An install
+// updated with `update-system.mjs apply` on such a system holds each entrypoint
+// as a regular file with the router's full content instead (#2259, #2272), so
+// a file whose content equals the router's counts as linking to it.
+const ROUTER = join(ROOT, '.agents', 'skills', 'career-ops', 'SKILL.md');
+const routerText = existsSync(ROUTER) ? readFileSync(ROUTER, 'utf-8') : null;
 function linkTarget(p) {
   const abs = join(ROOT, p);
   if (!existsSync(abs)) return null;
   if (lstatSync(abs).isSymbolicLink()) return readlinkSync(abs);
   const text = readFileSync(abs, 'utf-8');
-  return text.length < 200 && /^[^\n]+SKILL\.md\s*$/.test(text) ? text.trim() : null;
+  if (text.length < 200 && /^[^\n]+SKILL\.md\s*$/.test(text)) return text.trim();
+  if (abs !== ROUTER && text === routerText) return relative(dirname(abs), ROUTER);
+  return null;
 }
 const skillLinks = readdirSync(ROOT)
   .map(d => join(d, 'skills', 'career-ops', 'SKILL.md'))
