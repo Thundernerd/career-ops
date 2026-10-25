@@ -473,6 +473,9 @@ export function run(cmd, args = [], opts = {}) {
     lastFailure = {
       status: e?.status ?? null,
       signal: e?.signal ?? null,
+      // 'ETIMEDOUT' when the timeout killed the child. A killed child has no
+      // exit status, so this is the only field that says it ran out of time.
+      code: e?.code ?? null,
       stdout: e?.stdout == null ? '' : String(e.stdout),
       stderr: e?.stderr == null ? '' : String(e.stderr),
     };
@@ -490,7 +493,7 @@ let lastFailure = null;
  * Cleared by a successful run so a stale record is never attributed to a later
  * command. The suite is sequential, so "most recent" is unambiguous.
  *
- * @returns {{status: number|null, signal: string|null, stdout: string, stderr: string}|null}
+ * @returns {{status: number|null, signal: string|null, code: string|null, stdout: string, stderr: string}|null}
  */
 // describeSpawn lives in helpers/describe-spawn.mjs and is re-exported here so
 // the 410 tests that already import from this file can reach it. It is a
@@ -502,6 +505,39 @@ export { describeSpawn } from './helpers/describe-spawn.mjs';
 
 export function lastRunFailure() {
   return lastFailure;
+}
+
+// A V8 stack frame as Node prints it for an uncaught exception:
+// `    at fn (/path/file.mjs:12:5)`, `    at /path/file.mjs:12:5`.
+const STACK_FRAME_RE = /^ {4}at \S.*:\d+:\d+\)?$/m;
+
+/**
+ * Run a command that is expected to refuse its input, and report whether it
+ * refused it the intended way.
+ *
+ * `run(...) === null` is not that check. run() returns null for every failure:
+ * the intended rejection, but also an uncaught TypeError (Node exits 1 for that
+ * too), a signal, and the 30 s timeout. A script that crashed on the bad input
+ * therefore read as "correctly rejected". This requires the expected exit
+ * status, no signal, the expected message on stderr, and no stack trace there,
+ * so a crash whose text happens to contain the message still fails.
+ *
+ * @param {string} cmd - Executable, resolved through the run() allowlist.
+ * @param {string[]} args - Argument vector.
+ * @param {{stderr: string|RegExp, status?: number|null}} expected - The rejection:
+ *   a substring (or pattern) stderr must contain, and the exit status (default 1).
+ *   A signal-killed child has status null; it still never passes, since any
+ *   signal is refused.
+ * @param {object} [opts={}] - Passed through to run().
+ * @returns {boolean} True only for the intended rejection. On false,
+ *   formatRunFailure() describes what the child actually did.
+ */
+export function runRejects(cmd, args, { stderr, status = 1 }, opts = {}) {
+  if (run(cmd, args, opts) !== null) return false;
+  const f = lastFailure;
+  if (!f || f.signal !== null || f.status !== status) return false;
+  if (STACK_FRAME_RE.test(f.stderr)) return false;
+  return typeof stderr === 'string' ? f.stderr.includes(stderr) : stderr.test(f.stderr);
 }
 
 /**

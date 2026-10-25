@@ -680,23 +680,26 @@ export function validateLockedSections(html, cvMarkdown, lockedKeys) {
     renderedMap.set(lastKey, html.substring(lastIndex));
   }
 
+  // Each heading's section runs to the next heading of the same or a higher
+  // level, measured from that heading itself: a cv.md that opens with a
+  // `# Name` title must not swallow the `##` sections below it. When two
+  // headings fold to the same key, the shallower (then the first) one wins.
   const sourceLines = cvMarkdown.split(/\r?\n/);
-  const sourceMap = new Map();
-  let currentKey = null;
-  let currentLevel = 0;
-  let currentText = '';
-  for (const line of sourceLines) {
+  const headings = [];
+  sourceLines.forEach((line, index) => {
     const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
-    if (heading && (!currentKey || heading[1].length <= currentLevel)) {
-      if (currentKey) sourceMap.set(currentKey, currentText);
-      currentKey = sectionKey(heading[2]);
-      currentLevel = heading[1].length;
-      currentText = '';
-    } else if (currentKey) {
-      currentText += line + '\n';
-    }
-  }
-  if (currentKey) sourceMap.set(currentKey, currentText);
+    if (heading) headings.push({ index, level: heading[1].length, key: sectionKey(heading[2]) });
+  });
+  const sourceMap = new Map();
+  const sourceLevels = new Map();
+  headings.forEach((heading, i) => {
+    if (sourceLevels.has(heading.key) && sourceLevels.get(heading.key) <= heading.level) return;
+    const next = headings.slice(i + 1).find(other => other.level <= heading.level);
+    const end = next ? next.index : sourceLines.length;
+    const body = sourceLines.slice(heading.index + 1, end);
+    sourceMap.set(heading.key, body.length ? body.join('\n') + '\n' : '');
+    sourceLevels.set(heading.key, heading.level);
+  });
 
   for (const key of lockedKeys) {
     if (!sourceMap.has(key)) {

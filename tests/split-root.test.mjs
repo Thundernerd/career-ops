@@ -336,7 +336,7 @@ test('batch-runner: with no data root configured, nothing about the checkout lay
 
     const r = runBatch(checkout, {});
     const output = `${r.stdout}\n${r.stderr}`;
-    assert.equal(r.status, 0, `batch-runner exited ${r.status}:\n${output}`);
+    assert.equal(r.status, 0, describeSpawn(r, `batch-runner exited ${r.status}:\n${output}`));
 
     const prompt = readFileSync(join(checkout.captureDir, 'system-prompt.md'), 'utf8');
     assert.ok(prompt.includes('CHECKOUT-DECOY-PROFILE'), 'the default layout no longer injects the checkout\'s modes/_profile.md');

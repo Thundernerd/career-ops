@@ -158,6 +158,25 @@ function pickOracle(mirror, oldTag, targetSha, systemPaths) {
   return { oracle: candidate, changed };
 }
 
+// Where a commit keeps its SYSTEM_PATHS: lib/update-manifest.mjs since #5554,
+// update-system.mjs before it. Same rule as the updater's manifestSystemPathsAt.
+const MANIFEST_MODULE = 'lib/update-manifest.mjs';
+function manifestSourceAt(cwd, sha) {
+  let file = MANIFEST_MODULE;
+  try { git(cwd, 'cat-file', '-e', `${sha}:${file}`); } catch { file = 'update-system.mjs'; }
+  return { file, source: git(cwd, 'show', `${sha}:${file}`) };
+}
+
+/** Prepend `entry` to the SYSTEM_PATHS in worktree `wt`; returns the file it edited. */
+function injectManifestEntry(wt, entry) {
+  const file = existsSync(join(wt, MANIFEST_MODULE)) ? MANIFEST_MODULE : 'update-system.mjs';
+  const before = readFileSync(join(wt, file), 'utf-8');
+  const after = before.replace(/((?:export\s+)?const\s+SYSTEM_PATHS\s*=\s*\[)/, `$1\n  '${entry}',`);
+  if (after === before) throw new Error(`Could not inject the poisoned SYSTEM_PATHS entry into ${file} (constant renamed?)`);
+  writeFileSync(join(wt, file), after);
+  return file;
+}
+
 function isAncestor(cwd, tag, sha) {
   try { git(cwd, 'merge-base', '--is-ancestor', tag, sha); return true; } catch { return false; }
 }
@@ -175,9 +194,9 @@ export function runLeg({ oldTag, targetSha, label = oldTag, mutateMirror = null,
     // selection (a changed file apply actually rewrites) and the #1998-class
     // new-path assertion below. A refactor that renames the constant would make
     // the regex miss; fail loud rather than dereference null.
-    const targetUpdater = git(mirror, 'show', `${targetSha}:update-system.mjs`);
-    const sysMatch = targetUpdater.match(/const\s+SYSTEM_PATHS\s*=\s*\[([\s\S]*?)\];/);
-    if (!sysMatch) throw new Error(`Could not locate SYSTEM_PATHS in the target's update-system.mjs (constant renamed?) — refusing to run a leg with no managed-path set`);
+    const { file: manifestFile, source: targetManifest } = manifestSourceAt(mirror, targetSha);
+    const sysMatch = targetManifest.match(/const\s+SYSTEM_PATHS\s*=\s*\[([\s\S]*?)\];/);
+    if (!sysMatch) throw new Error(`Could not locate SYSTEM_PATHS in the target's ${manifestFile} (constant renamed?) — refusing to run a leg with no managed-path set`);
     const targetSystemPaths = Array.from(sysMatch[1].matchAll(/['"]([^'"]+)['"]/g), (m) => m[1]);
 
     const { oracle, changed } = pickOracle(mirror, oldTag, targetSha, targetSystemPaths);
@@ -459,11 +478,8 @@ function localPathsLeg() {
     const wt = join(work, 'poison-wt');
     git(mirror, 'worktree', 'add', wt, 'main');
     writeFileSync(join(wt, FORK_FILE), '# UPSTREAM VERSION — must never land on top of the fork\n');
-    const updater = readFileSync(join(wt, 'update-system.mjs'), 'utf-8')
-      .replace(/const\s+SYSTEM_PATHS\s*=\s*\[/, `const SYSTEM_PATHS = [\n  '${FORK_FILE}',`);
-    if (!updater.includes(`'${FORK_FILE}',`)) throw new Error('Could not inject the poisoned SYSTEM_PATHS entry (constant renamed?)');
-    writeFileSync(join(wt, 'update-system.mjs'), updater);
-    git(wt, 'add', '-f', FORK_FILE, 'update-system.mjs');
+    const manifestFile = injectManifestEntry(wt, FORK_FILE);
+    git(wt, 'add', '-f', FORK_FILE, manifestFile);
     commit(wt, 'poison: upstream adopts a path a fork already owns');
     const targetSha = git(wt, 'rev-parse', 'HEAD');
     git(mirror, 'worktree', 'remove', '--force', wt);
@@ -550,11 +566,8 @@ function userLayerRefusalLeg() {
     const wt = join(work, 'poison-wt');
     git(mirror, 'worktree', 'add', wt, 'main');
     writeFileSync(join(wt, USER_FILE), '# UPSTREAM VERSION — must never land on top of the user\n');
-    const updater = readFileSync(join(wt, 'update-system.mjs'), 'utf-8')
-      .replace(/const\s+SYSTEM_PATHS\s*=\s*\[/, `const SYSTEM_PATHS = [\n  '${USER_FILE}',`);
-    if (!updater.includes(`'${USER_FILE}',`)) throw new Error('Could not inject the poisoned SYSTEM_PATHS entry (constant renamed?)');
-    writeFileSync(join(wt, 'update-system.mjs'), updater);
-    git(wt, 'add', '-f', USER_FILE, 'update-system.mjs');
+    const manifestFile = injectManifestEntry(wt, USER_FILE);
+    git(wt, 'add', '-f', USER_FILE, manifestFile);
     git(wt, '-c', 'user.name=upgrade-tests', '-c', 'user.email=upgrade-tests@career-ops.test', 'commit', '-qm', 'poison: manifest names the user layer');
     const targetSha = git(wt, 'rev-parse', 'HEAD');
     git(mirror, 'worktree', 'remove', '--force', wt);

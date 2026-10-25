@@ -120,7 +120,7 @@ El silencio después de pulsar enviar no va contigo. Bastante gente vio lo mismo
   <a href="https://career-ops.org/es/manifesto?utm_source=readme&utm_content=es"><img src="docs/manifesto-wall.svg" alt="Tres firmas del manifiesto CareerOps, con sus propias palabras" width="800"></a>
 </p>
 
-<p align="center"><sub>Cada firma es un commit que puedes auditar. <a href="https://career-ops.org/es/manifesto?utm_source=readme&utm_content=es">Léelas todas, o añade la tuya →</a></sub></p>
+<p align="center"><sub>Cada firma es un commit que puedes auditar. <a href="https://career-ops.org/es/manifesto?utm_source=readme&utm_content=es">Léelas todas, o añade la tuya →</a> · <a href="https://career-ops.org/es/manifesto?utm_source=readme&utm_content=es#what-is-ai-job-search">¿Qué es la búsqueda de empleo con IA?</a></sub></p>
 
 <br>
 

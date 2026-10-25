@@ -118,7 +118,7 @@ The silence after you hit send is not about you. Enough people saw the same thin
   <a href="https://career-ops.org/manifesto?utm_source=readme"><img src="docs/manifesto-wall.svg" alt="Three signatures of the CareerOps manifesto, in their own words" width="800"></a>
 </p>
 
-<p align="center"><sub>Every signature is a commit you can audit. <a href="https://career-ops.org/manifesto?utm_source=readme">Read them all, or add yours →</a></sub></p>
+<p align="center"><sub>Every signature is a commit you can audit. <a href="https://career-ops.org/manifesto?utm_source=readme">Read them all, or add yours →</a> · <a href="https://career-ops.org/manifesto?utm_source=readme#what-is-ai-job-search">What is AI job search?</a></sub></p>
 
 <br>
 

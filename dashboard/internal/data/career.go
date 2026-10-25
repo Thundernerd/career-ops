@@ -761,10 +761,15 @@ func LoadReportSummary(careerOpsPath, reportPath string) (archetype, tldr, remot
 // the same delimiter logic as ParseApplications: a mixed "| " + tab-separated
 // body, or a pure pipe-delimited row. Field 0 is the first real column (num), so
 // the returned indices match the legacy layout (Status is field 5).
+//
+// A line is tab-delimited only when it holds a tab and at most two pipes, as in
+// tracker-parse.mjs trackerRowSeparator. In a pipe table a tab is note text that
+// set-status.mjs --note keeps verbatim, not a column delimiter.
+// test-fixtures/tracker-row-split-parity.json pins both readers to one table.
 func splitTrackerRow(line string) []string {
 	line = strings.TrimSpace(line)
 	var fields []string
-	if strings.Contains(line, "\t") {
+	if strings.Contains(line, "\t") && strings.Count(line, "|") <= 2 {
 		// Mixed format: starts with "| " then tab-separated.
 		line = strings.TrimPrefix(line, "|")
 		line = strings.TrimSpace(line)
