@@ -11,6 +11,7 @@ import { parseStatusLog } from "@/lib/pipeline-sankey.mjs";
 // Pipeline rows are parsed in a plain .mjs for the same reason as
 // tracker-table.mjs: so `node --test` can exercise the real parser.
 import { parseInbox, splitLines } from "@/lib/pipeline-table.mjs";
+import { reconcileInbox } from "@/lib/inbox-pending.mjs";
 // One definition of the `{n}-RESERVED.md` convention, shared with
 // run-cli-support.mjs — see report-files.mjs for why it lives there.
 import { isReservedReportFile } from "@/lib/report-files.mjs";
@@ -103,10 +104,10 @@ export type InboxJob = { url: string; company: string; role: string; location?: 
 
 /** Parse data/pipeline.md. The row grammar and its labeled-segment handling
  *  live in pipeline-table.mjs — see there for the column rules (#1015, #1017). */
-export function readInbox(): InboxJob[] {
+export function readInbox(applications: Pick<Application, "url">[] = readApplications()): InboxJob[] {
   const md = read("data/pipeline.md");
   if (!md) return [];
-  return parseInbox(md);
+  return reconcileInbox(parseInbox(md), applications);
 }
 
 /**
@@ -354,13 +355,14 @@ export type PipelineSummary = {
 export function pipelineSummary(): PipelineSummary {
   const root = careerOpsRoot();
   const scanDates = readScanDates();
+  const applications = readApplications();
   return {
     root,
     rootExists: fs.existsSync(root),
     // join the freshness date (first_seen) onto each raw posting — the inbox's
     // triage view orders/faceted-filters on it entirely client-side.
-    inbox: readInbox().map((j) => ({ ...j, postedAt: j.postedAt ?? scanDates.get(j.url) })),
-    applications: readApplications(),
+    inbox: readInbox(applications).map((j) => ({ ...j, postedAt: j.postedAt ?? scanDates.get(j.url) })),
+    applications,
   };
 }
 
