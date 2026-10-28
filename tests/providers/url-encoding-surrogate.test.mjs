@@ -128,6 +128,22 @@ try {
     (jobs) => jobs.length === 1 && jobs[0].url.endsWith('/00000000000040008000000000000001'),
   );
 
+  // capgemini.parseJobSearch — the brand-site fallback URL is built from the
+  // host-controlled ref/source when apply_job_url is unusable.
+  const { parseJobSearch: cgParse } = await load('capgemini.mjs');
+  check(
+    'capgemini.parseJobSearch',
+    () => cgParse(
+      { data: [
+        { id: 'bad-1', ref: `${LONE}bad`, source: 'SAP_BTP', title: 'Bad' },
+        { id: 'good-1', ref: '100-x', source: 'SAP_BTP', title: 'Good' },
+      ] },
+      { siteOrigin: 'https://www.example.com' },
+      'ExampleCo',
+    ).jobs,
+    (jobs) => jobs.length === 1 && jobs[0].url.includes('/jobs/100-x+sap_btp/'),
+  );
+
   // phenom.parseRefineSearch — for…of over refineSearch.data.jobs; jobId is the dedup key.
   const { parseRefineSearch } = await load('phenom.mjs');
   check(
@@ -306,7 +322,7 @@ try {
   // import _safe-url.mjs and call safeEncodeURIComponent; dropping either is the
   // regression this list catches.
   const CONVERTED = [
-    'alibaba.mjs', 'apple.mjs', 'arbeitsagentur.mjs', 'bamboohr.mjs', 'dover.mjs', 'feishu-jobs.mjs', 'garena.mjs', 'jibeapply.mjs',
+    'alibaba.mjs', 'apple.mjs', 'arbeitsagentur.mjs', 'bamboohr.mjs', 'capgemini.mjs', 'dover.mjs', 'feishu-jobs.mjs', 'garena.mjs', 'jibeapply.mjs',
     'kalibrr.mjs', 'manfred.mjs', 'meituan.mjs', 'mokahr.mjs', 'paylocity.mjs', 'phenom.mjs', 'platsbanken.mjs',
     'techinasia.mjs', 'thehub.mjs', 'tkms.mjs', 'vdab.mjs', 'zoho-recruit.mjs',
   ];

@@ -1252,6 +1252,8 @@ search_queries:
 #   magneto         www.magneto365.com/co/<search path>       (Colombia board; e.g. /co/trabajos/buscar/tecnologia)
 #   paylocity       recruiting.paylocity.com/Recruiting/Jobs/All/<board-guid>  (or api: field; a posting's
 #                   /Jobs/Details/<id> link carries no board id and is NOT claimed)
+#   capgemini       www.capgemini.com/...  (or api: https://cg-jobstream-api.azurewebsites.net/api). Capgemini brand
+#                   sites on their own domain (www.sogeti.nl, ...) need provider: capgemini + a capgemini: filter block
 #
 # When the public careers URL is a branded custom domain (e.g.
 # careers.adyen.com), set `provider: smartrecruiters` explicitly to
@@ -1489,6 +1491,20 @@ search_queries:
 #   eploy:                       # optional detail-page enrichment
 #     fetchDetails: false        # default false; sitemap-only is one request
 #     detailLimit: 25            # 1..100; ignored unless fetchDetails is true
+#   enabled: true
+#
+# - name: Example Capgemini Brand Co
+#   # Capgemini group job platform (capgemini.com and the brand sites that run
+#   # its cg-jobs plugin). capgemini.com URLs auto-detect; a brand site on its
+#   # own domain needs provider: capgemini explicitly.
+#   careers_url: https://www.exampleco.com/careers/jobs/
+#   provider: capgemini
+#   max_pages: 20          # optional page cap (100 jobs/page, default 20, max 100)
+#   capgemini:             # optional filters — omit to read the whole group feed
+#     brand: Sogeti          # string or list; case-sensitive (Capgemini, Capgemini Engineering,
+#                            # Capgemini Invent, Sogeti, frog)
+#     country_code: nl-nl    # string or list; copy the code the site uses (nl-nl, fr-fr, en-in, se-en, DE, ...)
+#     search: ""             # optional server-side keyword
 #   enabled: true
 #
 # - name: Example Phenom Co
@@ -2842,6 +2858,15 @@ tracked_companies:
     careers_url: https://jobs.ashbyhq.com/mollie
     notes: "Amsterdam. Payments fintech."
     enabled: true
+
+  - name: Sogeti (Netherlands)
+    careers_url: https://www.sogeti.nl/werken-bij/vacatures/
+    provider: capgemini
+    capgemini:
+      brand: Sogeti
+      country_code: nl-nl
+    notes: "Utrecht / Groningen / Zwolle. Capgemini's IT-services brand; mostly Dutch-language postings."
+    enabled: false
 
   - name: MessageBird
     careers_url: https://bird.com/careers
