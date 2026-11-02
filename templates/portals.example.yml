@@ -1270,6 +1270,7 @@ search_queries:
 #                   www.applicantpro.com/openings/<tenant>/… link. One entry per tenant subdomain)
 #   pythonorg       python.org/jobs
 #   generalist-world generalist.world/jobs/  (curated generalist / operator roles board; SSR HTML, one fetch; or provider: generalist-world)
+#   gamejobs        gamejobs.co  (games-industry board, Atom feed; any path on the host; or provider: gamejobs)
 #   applitrack      www.applitrack.com/<district>/onlineapp/  (Frontline AppliTrack K-12 board; optional default_location: "City, ST" is appended to site names that name no place)
 #   schoolspring    <district>.schoolspring.com  (K-12 board; public JSON API)
 #   neogov          www.schooljobs.com/careers/<agency>[/<folder>] or www.governmentjobs.com/careers/<agency>[/<folder>]
@@ -1992,6 +1993,17 @@ search_queries:
 #   provider: wp-job-manager             # required — WordPress hosts are not auto-detected
 #   careers_url: https://jobs.example.com/   # board address; only the host is used
 #   max_pages: 20         # optional page cap (100 items/request, default 20, max 100)
+#   enabled: true
+#
+# - name: GameJobs.co                   # games-industry board, openings collected from studio careers sites
+#   provider: gamejobs                    # or careers_url: https://gamejobs.co (auto-detected)
+#   gamejobs:
+#     searches:           # optional; omitted = the whole board (~75 feed pages)
+#       - { t: Engineering, w: Netherlands }   # keys: q, w (where, proximity), t (team), e, k, c
+#     fetchDetails: false # optional; true reads each posting page for location + employer link
+#     detailLimit: 100    # optional; uncached posting pages per scan (1..1000), cached 180 days
+#   max_pages: 100        # optional page cap per search (100 postings/page, default 100, max 200)
+#   # Without fetchDetails, location is empty: a strict location_filter skips these postings.
 #   enabled: true
 #
 # -- Remote-job feeds  (→ job_boards:; set provider: plus any provider-specific fields) --
