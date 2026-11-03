@@ -104,6 +104,27 @@ try {
     fail(`parseHnComment body-paragraph URL: ${JSON.stringify(parsedBleed?.url)}`);
   }
 
+  const PERMALINK_LOC = 'https://news.ycombinator.com/item?id=7002';
+  // parseHnComment ─ location is the segment that reads as a place, not parts[2].
+  // Taking the third segment stored "Full Time" or a role name, which failed every
+  // allow-list and let the remote-title rescue admit US-only posts past block: [US].
+  const locCases = [
+    ['Rune Labs | Remote (US, CA) | Full Time | Senior or Lead Backend Engineer', 'Remote (US, CA)'],
+    ['Lyra | Full-Time | Applied AI Engineer | REMOTE (US Citizenship Required) | Building satellites.', 'REMOTE (US Citizenship Required)'],
+    ['Marker Learning | Senior Full-Stack Engineer | Full-time | Remote, US only | $180k–$200k |', 'Remote, US only'],
+    ['Juro | AI Engineer (Agentic team) | London, UK | REMOTE (UK) | Full-time | £115k + equity', 'London, UK; REMOTE (UK)'],
+    ['Odoo | Software Developer | Hybrid (Belgium, 3 days/week) | Full-time | Visa + €10k Signing Bonus |', 'Hybrid (Belgium, 3 days/week)'],
+    ['Acme | Staff Engineers (Elixir) | Seed | Full-Time', 'Seed'],
+  ];
+  for (const [header, want] of locCases) {
+    const got = parseHnComment(header, PERMALINK_LOC)?.location;
+    if (got === want) {
+      pass(`parseHnComment location picks place segments: ${JSON.stringify(want)}`);
+    } else {
+      fail(`parseHnComment location for ${JSON.stringify(header)}: ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+    }
+  }
+
   // parseHnComment ─ posting URL selection. Taking the first URL anywhere picked
   // up company homepages, links to other HN comments, videos and referral links.
   const PERMALINK = 'https://news.ycombinator.com/item?id=7001';
