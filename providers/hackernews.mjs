@@ -98,6 +98,34 @@ function cleanCompany(field) {
 import { decodeEntities } from './_html-entities.mjs';
 import { ATS_HOST_PATTERNS } from '../ats-vendor.mjs';
 
+// Header segments are free-form and their order varies ("Company | Full-time |
+// Role | REMOTE (US)"), so the third segment is often not the location. Taking
+// it blindly stored "Full Time" or a role name as the location, which then
+// failed every allow-list and let the remote-title rescue admit US-only posts
+// past a user's `block: [US]`. Every segment that reads as a place or a work
+// arrangement is kept instead, joined with "; ".
+const WORK_MODE_RE = /\b(?:remote|hybrid|on-?site|in[- ]office|in[- ]person|anywhere|worldwide|wfh)\b/i;
+const PLACE_CODE_RE = /\b(?:US|USA|U\.S\.|UK|EU|EMEA|APAC|LATAM|NYC|SF|CET)\b/;
+const PLACE_NAME_RE = /\b(?:europe|americas|north america|canada|germany|netherlands|france|spain|switzerland|london|berlin|amsterdam|paris|toronto|new york|san francisco|bay area|seattle|boston|austin|los angeles)\b/i;
+// Comma followed by a capital: "Austin, TX", "Utrecht, The Netherlands".
+const CITY_REGION_RE = /\p{L},\s*\p{Lu}/u;
+// Segments that are a role, an employment type, pay or a visa note, never a place.
+const NOT_PLACE_RE = /\b(?:engineers?|engineering|developers?|designers?|managers?|scientists?|researchers?|architects?|analysts?|consultants?|specialists?|administrators?|admin|officers?|directors?|head of|lead|founding|staff|interns?|internships?|product|sales|visa)\b|^(?:full|part)[- ]?time\b|^contract\b|[$€£]\s?\d|\d\s?k\b/i;
+
+/**
+ * The header segments that name a location or work arrangement, joined with
+ * "; ", or '' when none does.
+ * @param {string[]} segments  Header fields after the company.
+ */
+function pickLocation(segments) {
+  return segments
+    .map(seg => seg.replace(/https?:\/\/\S+/g, '').trim())
+    .filter(seg => seg && seg.length <= 80 && !NOT_PLACE_RE.test(seg)
+      && (WORK_MODE_RE.test(seg) || PLACE_CODE_RE.test(seg)
+        || PLACE_NAME_RE.test(seg) || CITY_REGION_RE.test(seg)))
+    .join('; ');
+}
+
 /**
  * Parse a single HN comment text into a normalized job object.
  * The canonical format is "Company | Role | Location | URL" on the first line,
@@ -153,7 +181,7 @@ export function parseHnComment(text, fallbackUrl = '') {
     // Role is parts[1] — used in title construction below, not stored separately.
     // Strip any embedded URL from the location field (e.g. when the URL is run
     // into the same pipe segment rather than given its own 4th segment).
-    location = parts[2].replace(/https?:\/\/\S+/g, '').trim();
+    location = pickLocation(parts.slice(1)) || parts[2].replace(/https?:\/\/\S+/g, '').trim();
   } else if (parts.length === 2) {
     company = cleanCompany(parts[0]);
   }
