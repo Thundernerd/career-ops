@@ -195,6 +195,18 @@ try {
     (rows) => rows.length === 1 && rows[0].id === 'g-1',
   );
 
+  // tweakers.normalizeJob — id builds the fallback posting URL when the job
+  // carries no usable apply or detail link; a bad one must yield null.
+  const { normalizeJob: twNormalize } = await load('tweakers.mjs');
+  check(
+    'tweakers.normalizeJob',
+    () => [
+      twNormalize({ id: `${LONE}bad`, title: 'Bad' }),
+      twNormalize({ id: 'ok-123', title: 'Good' }),
+    ],
+    ([bad, good]) => bad === null && good !== null && good.url.endsWith('/vacature/ok-123'),
+  );
+
   // vdab.normalizeJob — id is the dedup key; a bad one must yield null.
   const { normalizeJob: vdabNormalize } = await load('vdab.mjs');
   check(
@@ -359,7 +371,7 @@ try {
   const CONVERTED = [
     'alibaba.mjs', 'apple.mjs', 'arbeitsagentur.mjs', 'bamboohr.mjs', 'bulldogjob.mjs', 'capgemini.mjs', 'deel.mjs', 'dover.mjs', 'feishu-jobs.mjs', 'garena.mjs', 'jibeapply.mjs',
     'kalibrr.mjs', 'keka.mjs', 'manfred.mjs', 'meituan.mjs', 'mokahr.mjs', 'paylocity.mjs', 'phenom.mjs', 'platsbanken.mjs',
-    'techinasia.mjs', 'thehub.mjs', 'tkms.mjs', 'vdab.mjs', 'zoho-recruit.mjs',
+    'techinasia.mjs', 'thehub.mjs', 'tkms.mjs', 'tweakers.mjs', 'vdab.mjs', 'zoho-recruit.mjs',
   ];
 
   // Bare `encodeURIComponent` on a url line that is reviewed as safe: the value

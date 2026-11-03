@@ -1271,6 +1271,7 @@ search_queries:
 #   pythonorg       python.org/jobs
 #   generalist-world generalist.world/jobs/  (curated generalist / operator roles board; SSR HTML, one fetch; or provider: generalist-world)
 #   gamejobs        gamejobs.co  (games-industry board, Atom feed; any path on the host; or provider: gamejobs)
+#   tweakers        tweakers.net/carriere/…  (Tweakers' IT job board via the Nationale Vacaturebank API; or provider: tweakers — fork-only, see SUPPORTED_JOB_BOARDS.md)
 #   applitrack      www.applitrack.com/<district>/onlineapp/  (Frontline AppliTrack K-12 board; optional default_location: "City, ST" is appended to site names that name no place)
 #   schoolspring    <district>.schoolspring.com  (K-12 board; public JSON API)
 #   neogov          www.schooljobs.com/careers/<agency>[/<folder>] or www.governmentjobs.com/careers/<agency>[/<folder>]
@@ -2004,6 +2005,14 @@ search_queries:
 #     detailLimit: 100    # optional; uncached posting pages per scan (1..1000), cached 180 days
 #   max_pages: 100        # optional page cap per search (100 postings/page, default 100, max 200)
 #   # Without fetchDetails, location is empty: a strict location_filter skips these postings.
+#   enabled: true
+#
+# - name: Tweakers Carrière             # Tweakers' IT job board (NL); fork-only, the API's robots.txt disallows all
+#   provider: tweakers                   # or careers_url: https://tweakers.net/carriere/it-banen/zoeken/ (auto-detected)
+#   tweakers:
+#     searches:           # optional; omitted = the whole board (~45 pages)
+#       - { query: developer, province: Zuid-Holland }   # keys: query, province, contractType, careerLevel, workingPlace, educationLevel
+#   max_pages: 60         # optional page cap per search (100 jobs/page, default 60, max 100)
 #   enabled: true
 #
 # -- Remote-job feeds  (→ job_boards:; set provider: plus any provider-specific fields) --
