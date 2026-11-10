@@ -1338,6 +1338,7 @@ search_queries:
 #                   www.applicantpro.com/openings/<tenant>/… link. One entry per tenant subdomain)
 #   pythonorg       python.org/jobs
 #   generalist-world generalist.world/jobs/  (curated generalist / operator roles board; SSR HTML, one fetch; or provider: generalist-world)
+#   gracklehq       gracklehq.com/jobs  (games-industry board, board-wide; any path on the host)
 #   applitrack      www.applitrack.com/<district>/onlineapp/  (Frontline AppliTrack K-12 board; optional default_location: "City, ST" is appended to site names that name no place)
 #   schoolspring    <district>.schoolspring.com  (K-12 board; public JSON API)
 #   neogov          www.schooljobs.com/careers/<agency>[/<folder>] or www.governmentjobs.com/careers/<agency>[/<folder>]
@@ -1912,6 +1913,16 @@ search_queries:
 #
 # - name: Generalist World                # curated generalist / operator roles (SSR HTML, one fetch)
 #   provider: generalist-world            # or careers_url: https://generalist.world/jobs/ (auto-detected)
+#   enabled: true
+#
+# - name: Grackle                         # games-industry jobs from studios' own careers sites (SSR HTML)
+#   provider: gracklehq                   # or careers_url: https://gracklehq.com/jobs (auto-detected)
+#   max_pages: 100        # optional page cap (30 postings/page, default 100, max 200; ~82 pages for the whole board)
+#   gracklehq:            # optional
+#     search: ""          # the board's own title search; omit to walk the whole board
+#     resolveRedirects: true   # swap /rd/{id} for the employer URL, title-filter survivors only (default true)
+#     resolveLimit: 50         # uncached redirect lookups per scan (default 50, max 500); resolved ids are cached
+#   # The board keeps postings for years; each card's age becomes postedAt, so max_posting_age_days applies.
 #   enabled: true
 #
 # - name: Built In                        # US tech aggregator, many employers
