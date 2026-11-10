@@ -1362,6 +1362,7 @@ search_queries:
 #   homerun         <slug>.homerun.co or feed.homerun.co/<slug>  (branded careers domain → api: https://feed.homerun.co/<slug>)
 #   werkenbijdeoverheid  www.werkenbijdeoverheid.nl  (Dutch government vacancy portal, board-wide; any path on the host)
 #   workwithindies  www.workwithindies.com  (indie game studio job board, board-wide; any path on the host)
+#   8bitplay        8bitplay.com  (8Bit Agency games-industry job board, board-wide; any path on the host)
 #   computrabajo    <country>.computrabajo.com/<search path>  (LatAm board; e.g. co.computrabajo.com/trabajo-de-sistemas)
 #   magneto         www.magneto365.com/co/<search path>       (Colombia board; e.g. /co/trabajos/buscar/tecnologia)
 #   bulldogjob      bulldogjob.pl/companies/jobs[/s/<filters>]  (Polish tech board; filters live in the path, e.g. /s/role,devops/city,Remote)
@@ -1949,6 +1950,16 @@ search_queries:
 #     resolveRedirects: true   # swap /rd/{id} for the employer URL, title-filter survivors only (default true)
 #     resolveLimit: 50         # uncached redirect lookups per scan (default 50, max 500); resolved ids are cached
 #   # The board keeps postings for years; each card's age becomes postedAt, so max_posting_age_days applies.
+#   enabled: true
+#
+# - name: 8Bit                            # games-industry board of a recruitment agency (SSR HTML)
+#   provider: 8bitplay                    # or careers_url: https://8bitplay.com/jobs/ (auto-detected)
+#   max_pages: 20         # optional page cap (10 postings/page, default 20, max 50)
+#   8bitplay:             # optional detail-page enrichment
+#     fetchDetails: false # true: description, and a studio posting's URL becomes its own apply link
+#     detailLimit: 25     # 1..100; ignored unless fetchDetails is true
+#   # Studio postings (/job/) carry the studio as company when the board's cards
+#   # name it; the agency's own mandates (/jobs/) withhold the employer (company "").
 #   enabled: true
 #
 # - name: Built In                        # US tech aggregator, many employers
