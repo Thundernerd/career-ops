@@ -1922,7 +1922,8 @@ search_queries:
 #     fetchDetails: false # true: description, and a studio posting's URL becomes its own apply link
 #     detailLimit: 25     # 1..100; ignored unless fetchDetails is true
 #   # Studio postings (/job/) carry the studio as company when the board's cards
-#   # name it; the agency's own mandates (/jobs/) withhold the employer (company "").
+#   # name it (with fetchDetails, also via the studio's logo); the agency's own
+#   # mandates (/jobs/) withhold the employer (company "").
 #   enabled: true
 #
 # - name: Built In                        # US tech aggregator, many employers

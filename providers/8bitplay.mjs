@@ -33,7 +33,10 @@
 // One request `/jobs/?paged=N&job-board-paged=N` returns page N of both, so
 // the walk costs max(table pages, card pages) requests. A list is finished on
 // a page that comes back empty or shorter than its first page.
-// A `/job/` row the cards do not cover keeps `company: ''`.
+// A `/job/` row the cards do not cover keeps `company: ''`, unless
+// fetchDetails reads its page: that page's og:image is the studio's logo,
+// and a card for another posting by the same studio names it (logo upload
+// path → company, learned from every card walked).
 //
 // PARSING CONTRACT. A table row is `<a href="https://8bitplay.com/{job|jobs}/
 // {slug}/" class="acf-jobs__table-row acf-jobs__table-row--job">` holding
@@ -53,7 +56,8 @@
 // posting's `url` becomes the studio's own apply link (Source Indexing Policy
 // rule 2) with `utm_*` removed — kept on 8Bit's page when that link is
 // missing, not https, or a mailto. Bounded by `detailLimit` (default 25,
-// 1..100), limited to titles the scan's title filter keeps, paced, and
+// 1..100), limited to postings the scan would add (`ctx.postingWanted`, else
+// the title filter's `ctx.titleWanted`), paced, and
 // skipped while a health probe runs.
 
 import { fetchTextWithRetry, sleep } from './_http.mjs';
@@ -81,6 +85,8 @@ const SPAN_RE = /<span\b([^>]*)>([\s\S]*?)<\/span>/gi;
 const OFFER_SPLIT = /\bclass="acf-job-board__offer"/;
 const OFFER_LINK_RE = /<a\b[^>]*\bhref="([^"]*)"[^>]*\bclass="post__similar-job"/i;
 const OFFER_COMPANY_RE = /<p\b[^>]*\bclass="acf-job-board__img-text"[^>]*>([\s\S]*?)<\/p>/i;
+const OFFER_LOGO_RE = /<div\b[^>]*\bclass="acf-job-board__logo"[^>]*>[\s\S]*?<img\b[^>]*\bsrc="([^"]*)"/i;
+const DETAIL_OG_IMAGE_RE = /<meta\b[^>]*\bproperty="og:image"[^>]*\bcontent="([^"]*)"/i;
 /** A posting page: either post type, one slug segment, nothing else. */
 const POSTING_URL_RE = /^https:\/\/(?:www\.)?8bitplay\.com\/(jobs?)\/([a-z0-9][a-z0-9-]*)\/?$/i;
 /** Listing signal for the silent-zero guard. */
@@ -123,13 +129,34 @@ export function buildLocation(placeCell, workMode) {
 }
 
 /**
+ * A studio logo's identity: its uploads path with WordPress's `-{w}x{h}`
+ * size suffix dropped, so a card's thumbnail and a detail page's og:image of
+ * the same upload compare equal. '' for anything else.
+ * @param {string} raw
+ */
+export function logoKey(raw) {
+  try {
+    const u = new URL(decodeEntities(String(raw ?? '')).replace(/\\\//g, '/'), ORIGIN);
+    if (!TRUSTED_HOSTS.has(u.hostname.toLowerCase())) return '';
+    const m = /\/wp-content\/uploads\/(.+?)(?:-\d+x\d+)?(\.[a-z0-9]+)$/i.exec(u.pathname);
+    return m ? `${m[1]}${m[2]}`.toLowerCase() : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Parse one /jobs/ page: its table rows and its "job board" cards.
  *
  * `rawRows` / `rawOffers` count what the page carried, before any row was
  * dropped, so a malformed row cannot end the walk early.
  *
  * @param {string} html
- * @returns {{ jobs: {title: string, url: string, company: string, location: string, kind: 'board' | 'mandate'}[], rawRows: number, rawOffers: number, companies: Map<string, string>, recognized: boolean }}
+ * `logos` maps each studio card's logo (`logoKey`) to the company named
+ * under it, for a `/job/` row no card covers: its detail page shows the same
+ * logo as og:image.
+ *
+ * @returns {{ jobs: {title: string, url: string, company: string, location: string, kind: 'board' | 'mandate'}[], rawRows: number, rawOffers: number, companies: Map<string, string>, logos: Map<string, string>, recognized: boolean }}
  */
 export function parseListingPage(html) {
   const source = String(html ?? '');
@@ -150,6 +177,7 @@ export function parseListingPage(html) {
   }
 
   const companies = new Map();
+  const logos = new Map();
   const offers = source.split(OFFER_SPLIT).slice(1);
   for (const offer of offers) {
     const link = OFFER_LINK_RE.exec(offer);
@@ -157,11 +185,15 @@ export function parseListingPage(html) {
     if (!url || !/\/job\//.test(url)) continue; // mandates read "8Bit" — the agency, not the employer
     const company = OFFER_COMPANY_RE.exec(offer);
     const name = company ? visibleText(company[1]) : '';
-    if (name) companies.set(url, name);
+    if (!name) continue;
+    companies.set(url, name);
+    const logo = OFFER_LOGO_RE.exec(offer);
+    const key = logo ? logoKey(logo[1]) : '';
+    if (key && !logos.has(key)) logos.set(key, name);
   }
 
   const recognized = rawRows > 0 || SECTION_RE.test(source);
-  return { jobs, rawRows, rawOffers: offers.length, companies, recognized };
+  return { jobs, rawRows, rawOffers: offers.length, companies, logos, recognized };
 }
 
 /**
@@ -186,16 +218,22 @@ export function assertParsedSomething(html, url) {
 }
 
 /**
- * Description text and, on a `/job/` page, the studio's apply link.
+ * Description text, on a `/job/` page the studio's apply link, and the
+ * page's og:image as a `logoKey` (the studio's logo on a `/job/` page).
  * @param {string} html
- * @returns {{ description: string, applyUrl: string }}
+ * @returns {{ description: string, applyUrl: string, logo: string }}
  */
 export function parseDetailPage(html) {
   const source = String(html ?? '');
   const content = DETAIL_CONTENT_RE.exec(source);
   const description = content ? htmlToText(content[1].replace(DETAIL_HEADING_RE, ' ')) : '';
   const apply = APPLY_LINK_RE.exec(source);
-  return { description, applyUrl: apply ? cleanApplyUrl(decodeEntities(apply[1]).trim()) : '' };
+  const og = DETAIL_OG_IMAGE_RE.exec(source);
+  return {
+    description,
+    applyUrl: apply ? cleanApplyUrl(decodeEntities(apply[1]).trim()) : '',
+    logo: og ? logoKey(og[1]) : '',
+  };
 }
 
 /**
@@ -282,6 +320,8 @@ export default {
     /** @type {{title: string, url: string, company: string, location: string, kind: 'board' | 'mandate'}[]} */
     const rows = [];
     const companies = new Map();
+    /** @type {Map<string, string>} */
+    const logos = new Map();
     const seen = new Set();
     let rowsDone = false;
     let offersDone = false;
@@ -299,6 +339,7 @@ export default {
       }
       if (!offersDone) {
         for (const [k, v] of parsed.companies) companies.set(k, v);
+        for (const [k, v] of parsed.logos) if (!logos.has(k)) logos.set(k, v);
         offersDone = parsed.rawOffers === 0 || parsed.rawOffers < offerPageSize;
       }
       if (rowsDone && offersDone) break;
@@ -331,15 +372,25 @@ export default {
 
     const { fetchDetails, detailLimit } = parseConfig(entry);
     if (fetchDetails && !probing) {
+      // ctx.postingWanted (scan.mjs) also applies location, posting age and
+      // dedup; ctx.titleWanted is the fallback for a caller without it.
+      const postingWanted = typeof ctx?.postingWanted === 'function' ? ctx.postingWanted : null;
       const titleWanted = typeof ctx?.titleWanted === 'function' ? ctx.titleWanted : null;
-      const wanted = (titleWanted ? jobs.filter((job) => titleWanted(job.title)) : jobs).slice(0, detailLimit);
+      const pool = postingWanted
+        ? jobs.filter((job) => postingWanted(job))
+        : titleWanted ? jobs.filter((job) => titleWanted(job.title)) : jobs;
+      const wanted = pool.slice(0, detailLimit);
       for (let i = 0; i < wanted.length; i++) {
         const job = wanted[i];
         if (i > 0) await sleep(DETAIL_DELAY_MS, ctx);
         try {
           const detail = parseDetailPage(await fetchTextWithRetry(ctx, job.url, opts));
           if (detail.description) job.description = detail.description;
-          if (detail.applyUrl && /\/job\//.test(job.url)) job.url = detail.applyUrl;
+          const studioPosting = /\/job\//.test(job.url);
+          // A studio posting no card named: its page shows the studio's logo,
+          // which a card elsewhere on the board names. Mandates stay ''.
+          if (studioPosting && !job.company && detail.logo) job.company = logos.get(detail.logo) || '';
+          if (detail.applyUrl && studioPosting) job.url = detail.applyUrl;
         } catch {
           // Detail lookup is opt-in enrichment. Keep the listing row on failure.
         }
