@@ -245,6 +245,15 @@
  *                              relevant postings, not the board. It never drops a row: the
  *                              provider still returns every posting and scan.mjs filters.
  *                              Absent in verify-portals and tests.
+ * @property {(job: Job) => boolean} [postingWanted] Present only in scan.mjs runs: whether
+ *                              this posting, as the provider has it now, passes the scan's
+ *                              cheap pre-dedup gates (title when the entry filters on it,
+ *                              location_filter, max_posting_age_days) and is not already
+ *                              seen by URL or listing identity. For a provider that pays a
+ *                              bounded per-posting budget (gracklehq's redirect lookups)
+ *                              and should not spend it on postings the scan will drop
+ *                              anyway. Advisory like titleWanted: it never drops a row.
+ *                              Absent in verify-portals and tests.
  * @property {{get: (key: string) => any, set: (key: string, value: any) => void, delete: (key: string) => void}} [idCache]
  *                              This provider's slice of the store in provider-id-cache.mjs:
  *                              values it resolved on an earlier scan (a board id that only
