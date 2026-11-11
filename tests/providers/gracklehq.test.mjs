@@ -362,6 +362,19 @@ try {
     else fail(`cache reuse: ${again.calls.map((c) => c.url)}`);
   }
   {
+    // postingWanted (scan.mjs: title + location + age + dedup) wins over
+    // titleWanted, so the budget skips postings the scan drops later.
+    const ctx = makeCtx(board([1, 3, 5]), {
+      titleWanted: () => true,
+      postingWanted: (/** @type {any} */ job) => job.url.endsWith('/rd/3'),
+    });
+    const jobs = await grackle.fetch({ provider: 'gracklehq', gracklehq: { resolveLimit: 1 } }, ctx);
+    const rdCalls = ctx.calls.filter((c) => c.url.includes('/rd/'));
+    if (rdCalls.length === 1 && rdCalls[0].url.endsWith('/rd/3') && jobs.find((j) => j.title && j.url === 'https://jobs.lever.co/acme/3')) {
+      pass('postingWanted decides which postings spend the lookup budget, over titleWanted');
+    } else fail(`postingWanted: ${rdCalls.map((c) => c.url)} / ${jobs.map((j) => j.url)}`);
+  }
+  {
     const ctx = makeCtx(board([1, 3, 5], {
       1: 'https://gracklehq.com/jobs',
       3: Object.assign(new Error('HTTP 404'), { status: 404 }),

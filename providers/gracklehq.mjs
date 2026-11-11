@@ -34,8 +34,9 @@
 // and some LinkedIn or plain-http links). Source Indexing Policy rule 2 wants
 // that employer URL as `url`, and it is what dedups against the ATS providers,
 // so the provider reads each redirect's Location with a `redirect: 'manual'`
-// request — never following it — for the postings the scan's title filter
-// keeps (`ctx.titleWanted`), newest first, up to `gracklehq.resolveLimit`
+// request — never following it — for the postings the scan would still add
+// (`ctx.postingWanted`: title, location, posting age, not already seen;
+// `ctx.titleWanted` when only that is given), newest first, up to `gracklehq.resolveLimit`
 // (default 50) per scan, 250 ms apart. A target never changes for an id, so
 // each one is cached in `ctx.idCache` and costs one request ever. A posting
 // left unresolved (over the limit, a failed request, a target that is not an
@@ -229,15 +230,23 @@ async function readRedirect(ctx, rdUrl) {
 
 /**
  * Swap `/rd/{id}` URLs for the employer URLs they redirect to, for the
- * postings the scan's title filter keeps, bounded by `limit`.
+ * postings the scan would still add (`ctx.postingWanted`, else the title
+ * filter's `ctx.titleWanted`), bounded by `limit`.
  * @param {(Job & { rdId?: string })[]} jobs
  * @param {any} ctx
  * @param {string} name
  * @param {number} limit
  */
 async function resolveUrls(jobs, ctx, name, limit) {
+  // ctx.postingWanted (scan.mjs) also applies location, posting age and
+  // dedup, so the budget is not spent on postings the scan drops after the
+  // title check. ctx.titleWanted is the fallback for a caller that only has
+  // the title decision.
+  const postingWanted = typeof ctx?.postingWanted === 'function' ? ctx.postingWanted : null;
   const titleWanted = typeof ctx?.titleWanted === 'function' ? ctx.titleWanted : null;
-  const wanted = titleWanted ? jobs.filter((job) => titleWanted(job.title)) : jobs;
+  const wanted = postingWanted
+    ? jobs.filter((job) => postingWanted(job))
+    : titleWanted ? jobs.filter((job) => titleWanted(job.title)) : jobs;
   let requests = 0;
   let resolved = 0;
   let skipped = 0;

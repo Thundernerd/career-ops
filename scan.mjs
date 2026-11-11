@@ -5110,6 +5110,19 @@ async function main() {
       // the title filter below will drop. Absent when this company's filter_on
       // leaves the title out, since then no title is dropped.
       ...(normalizeFilterOn(company.filter_on).includes('title') ? { titleWanted: (title) => titleGate(title) === 'match' } : {}),
+      // The cheap per-posting gates the loop below runs before dedup, on the
+      // posting as the provider has it now: title (when filtered on),
+      // location, posting age, and whether the URL or listing identity was
+      // already seen. For a provider that pays a request per posting to learn
+      // something the scan would keep (gracklehq's redirect lookups), so a
+      // bounded budget goes to postings that can still be added. Advisory like
+      // titleWanted: the provider returns every posting either way.
+      postingWanted: (job) => {
+        if (normalizeFilterOn(company.filter_on).includes('title') && titleGate(job.title) !== 'match') return false;
+        if (!locationFilter(job.location, job.url, job.title, job)) return false;
+        if (!postingAgeFilter(job.postedAt)) return false;
+        return !isOfferSeen(job, seenUrls, dedupSnapshot.identityPromotableUrls);
+      },
       idCache: idCaches.forProvider(provider.id),
     };
     applyEntryResponseCap(ctx, company);
