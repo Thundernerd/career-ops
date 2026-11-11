@@ -49,12 +49,13 @@ function row(path, o = {}) {
  * One "job board" card.
  * @param {string} path
  * @param {string} company
+ * @param {string} [logo]  uploads path of the card's logo
  */
-function offer(path, company) {
+function offer(path, company, logo = 'logo.jpg') {
   return `<div class="acf-job-board__offer">
     <a href="${ORIGIN}/${path}/" class="post__similar-job">
       <div class="acf-job-board__top"><div class="acf-job-board__logo">
-        <img src="${ORIGIN}/wp-content/uploads/logo.jpg" class="acf-job-board__img wp-post-image" alt="logo" />
+        <img src="${ORIGIN}/wp-content/uploads/${logo}" class="acf-job-board__img wp-post-image" alt="logo" />
         <p class="acf-job-board__img-text">${company}</p>
       </div></div>
       <h3 class="t--h3 post__similar-job-title acf-jtw__title">Role</h3>
@@ -408,6 +409,42 @@ ${applyHref ? `<a\n href="${applyHref}"\n class="btn acf-job-board__single-butto
     const details = ctx.calls.filter((c) => !c.url.startsWith(`${ORIGIN}/jobs/?`) && c.url !== `${ORIGIN}/jobs/`);
     if (details.length === 2 && jobs.length === 20) pass('fetchDetails reads only postings ctx.titleWanted keeps, and still returns every row');
     else fail(`titleWanted: details=${details.length} jobs=${jobs.length}`);
+  }
+  {
+    // A studio posting no card names gets its company from its page's logo
+    // (og:image), which another card by the same studio names. A mandate
+    // never does, even when its page shows a known logo.
+    const ogPage = (/** @type {string} */ logo) => detailPage('').replace(
+      '<html><body>',
+      `<html><head><meta property="og:image" content="${ORIGIN}/wp-content/uploads/${logo}" /></head><body>`,
+    );
+    const list = listPage(
+      [row('job/studio-a-1', { title: 'Artist' }), row('job/studio-a-2', { title: 'Engineer' }), row('job/studio-b-1', { title: 'Producer' }), row('jobs/mandate-x', { title: 'Lead' })],
+      [offer('job/studio-a-1', 'Studio A', '2025/11/studio_a_logo-200x200.jpeg')],
+    );
+    const ctx = makeCtx((url) => {
+      if (url === `${ORIGIN}/jobs/`) return list;
+      if (url.includes('/jobs/?')) return listPage([]);
+      if (url.includes('studio-b-1')) return ogPage('2025/11/unknown_logo.jpeg');
+      return ogPage('2025/11/studio_a_logo.jpeg');
+    });
+    const jobs = await bit.fetch({ provider: '8bitplay', '8bitplay': { fetchDetails: true } }, ctx);
+    const byTitle = Object.fromEntries(jobs.map((j) => [j.title, j]));
+    if (byTitle.Artist.company === 'Studio A' && byTitle.Engineer.company === 'Studio A') pass('fetchDetails: a studio posting no card covers takes the company its logo is named under');
+    else fail(`logo company: ${JSON.stringify(byTitle.Engineer)}`);
+    if (byTitle.Lead.company === '' && byTitle.Producer.company === '') pass('fetchDetails: a mandate, or an unknown logo, keeps company ""');
+    else fail(`logo leak: ${JSON.stringify([byTitle.Lead, byTitle.Producer])}`);
+  }
+  {
+    const lists = board(20);
+    const ctx = makeCtx((url) => (url.includes('/jobs/?') || url === `${ORIGIN}/jobs/` ? lists(url) : detailPage('')), {
+      titleWanted: () => true,
+      postingWanted: (/** @type {any} */ job) => job.title === 'Role 3',
+    });
+    await bit.fetch({ provider: '8bitplay', '8bitplay': { fetchDetails: true } }, ctx);
+    const details = ctx.calls.filter((c) => !c.url.startsWith(`${ORIGIN}/jobs/?`) && c.url !== `${ORIGIN}/jobs/`);
+    if (details.length === 1) pass('fetchDetails prefers ctx.postingWanted over ctx.titleWanted');
+    else fail(`postingWanted: details=${details.length}`);
   }
   {
     const ctx = makeCtx(board(5));
